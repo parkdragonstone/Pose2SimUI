@@ -20,3 +20,4 @@ demo/calibration/debug_images
 demo/calibration/Calib_scene.toml
 demo/calibration/*.json
 *.toml
+*.DS_Store
