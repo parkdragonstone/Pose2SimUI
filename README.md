@@ -20,7 +20,7 @@
 ### 1. 저장소 클론
 
 ```bash
-git clone <여기에_저장소_주소_입력>
+git clone https://github.com/parkdragonstone/Pose2SimUI.git
 cd Pose2SimUI
 ```
 
