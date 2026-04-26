@@ -198,3 +198,132 @@ dist\Pose2SimUI\Pose2SimUI.exe
 ---
 
 ## Demo
+
+### 시작 화면
+
+![](images/MAIN_PAGES.png)
+
+---
+
+### 새 프로젝트 생성
+
+왼쪽 사이드바의 **+ 새 프로젝트** 버튼 클릭 → 프로젝트 이름, 저장 위치, 카메라 수 입력 후 **OK**
+
+![](images/NEW_PROJECT.png)
+
+생성되는 폴더 구조:
+
+```
+프로젝트명/
+├── calibration/
+│   ├── intrinsics/
+│   │   ├── cam01/
+│   │   └── cam02/  ...
+│   └── extrinsics/
+│       ├── cam01/
+│       └── cam02/  ...
+├── Trial_01/
+│   └── videos/
+└── Config.toml
+```
+
+---
+
+### Calibration
+
+Calibration 탭에서 **+ New** 버튼 클릭
+
+![](images/NEW_CALIBRATION.png)
+
+#### Intrinsic Calibration
+
+`calibration/intrinsics/cam01/`, `cam02/` ... 폴더에 캘리브레이션 영상/이미지를 넣은 후 아래와 같이 설정합니다.
+
+![](images/INTRINSIC_SETTING.png)
+
+| 항목 | 값 |
+|---|---|
+| Board Type | CharucoBoard |
+| Columns | 3 |
+| Rows | 5 |
+| Square Size | 75 mm |
+
+**Run Intrinsic** 버튼 클릭 → 캘리브레이션 완료 시 `calibration/debug_images/` 에 코너 감지 이미지 저장
+
+![](images/INTRINSIC_RESULT.png)
+
+#### Extrinsic Calibration
+
+`calibration/extrinsics/cam01/`, `cam02/` ... 폴더에 씬 영상을 넣은 후 **Scene** 을 선택합니다.
+
+![](images/EXTRINSIC_SETTING.png)
+
+3D 기준점 좌표를 입력합니다 (단위: m):
+
+```
+0 0 0
+0 -0.492 0
+0 0 0.45
+0 -0.492 0.45
+0.492 0 0
+0.492 -0.492 0
+0.492 0 0.45
+0.492 -0.492 0.45
+```
+
+**Run Extrinsic** 클릭 → 카메라별로 영상 프레임이 표시되면 순서대로 8개 포인트를 클릭
+
+![](images/EXTRINSIC_POINT_CHECK1.png)
+![](images/EXTRINSIC_POINT_CHECK2.png)
+
+모든 카메라 포인트 입력 후 **완료 - 캘리브레이션 실행** 버튼 클릭
+
+![](images/EXTRINSIC_RESULT.png)
+
+---
+
+### 3D Analysis
+
+왼쪽 사이드바에서 Trial 선택
+
+![](images/TRIALS_PAGE.png)
+
+#### 설정 (Config)
+
+오른쪽 패널에서 각 탭을 설정하고 **저장** 버튼 클릭
+
+| 탭 | 이미지 |
+|---|---|
+| Project | ![](images/SETTING_PROJECT.png) |
+| Pose | ![](images/SETTING_POSE.png) |
+| Synchronization | ![](images/SETTING_SYNC.png) |
+| Triangulation | ![](images/SETTING_TRIANG.png) |
+| Filtering | ![](images/SETTING_FILTERING.png) |
+| Marker Augmentation | ![](images/SETTING_AUG.png) |
+| Kinematics | ![](images/SETTING_KINEMATICS.png) |
+
+#### 파이프라인 실행
+
+오른쪽 사이드바 **Pipeline** 탭에서 **Run All** 버튼 클릭
+
+![](images/RUN.png)
+
+---
+
+### 결과
+
+#### Pose Estimation
+
+![](images/POSE_ESTIMATION.png)
+
+#### 3D Keypoints
+
+![](images/3D_KEYPOINT.png)
+
+#### Kinematics Graph
+
+![](images/GRAPH.png)
+
+#### 결과 폴더 구조
+
+![](images/RESULTS.png)
