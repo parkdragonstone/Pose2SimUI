@@ -6,13 +6,13 @@
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QLabel, QComboBox,
     QPushButton, QScrollArea, QFrame,
     QSizePolicy,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt
 
 from src.core.project import Project, Trial
 from src.core.pipeline_runner import PipelineRunner
@@ -80,14 +80,14 @@ class PipelinePanel(QWidget):
 
         # 구분선
         sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
         layout.addWidget(sep)
 
         # Step Cards 스크롤 영역
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setFrameShape(QFrame.NoFrame)
 
         cards_widget = QWidget()
         cards_layout = QVBoxLayout(cards_widget)

@@ -4,9 +4,9 @@ Visual Design System — QSS 스타일시트
 # 참고: Behance Desktop UI Design App 스타일
 """
 import sys
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QFont, QPalette, QColor
-from PyQt6.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QFont, QPalette, QColor
+from PyQt5.QtCore import Qt
 
 # 플랫폼별 실제 존재하는 폰트 사용 (font alias 경고 방지)
 _UI_FONT = "Helvetica Neue" if sys.platform == "darwin" else "Segoe UI"

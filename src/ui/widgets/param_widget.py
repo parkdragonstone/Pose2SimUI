@@ -3,14 +3,14 @@ Config 파라미터 위젯 — 값 타입별 입력 위젯 팩토리
 # Design Ref: §7.1 — WIDGET_MAP: bool→QCheckBox, int→QSpinBox, float→QDoubleSpinBox
 #                     str→QLineEdit/QComboBox, list→DynamicListWidget
 """
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
     QCheckBox, QSpinBox, QDoubleSpinBox,
     QLineEdit, QComboBox, QListWidget,
     QPushButton, QListWidgetItem, QLabel,
     QSizePolicy,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt
 import base64
 
 # ── SpinBox 화살표 SVG (base64) ──────────────────────────────────────────
@@ -111,7 +111,7 @@ class IntParamWidget(QWidget):
         self._spin.setValue(int(value))
         self._spin.setMinimumWidth(60)
         self._spin.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Expanding, QSizePolicy.Fixed
         )
         self._spin.valueChanged.connect(self.value_changed)
         layout.addWidget(self._spin)
@@ -139,7 +139,7 @@ class FloatParamWidget(QWidget):
         self._spin.setValue(float(value))
         self._spin.setMinimumWidth(60)
         self._spin.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Expanding, QSizePolicy.Fixed
         )
         self._spin.valueChanged.connect(self.value_changed)
         layout.addWidget(self._spin)
@@ -164,13 +164,13 @@ class ComboParamWidget(QWidget):
         if str(value) in choices:
             self._combo.setCurrentText(str(value))
         self._combo.setSizeAdjustPolicy(
-            QComboBox.SizeAdjustPolicy.AdjustToContents
+            QComboBox.AdjustToContents
         )
         # 가장 긴 항목 길이를 최소 기준으로 확보 (팝업 잘림 방지)
         max_len = max((len(c) for c in choices), default=8)
         self._combo.setMinimumContentsLength(max_len)
         self._combo.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Expanding, QSizePolicy.Fixed
         )
         self._combo.currentTextChanged.connect(self.value_changed)
         layout.addWidget(self._combo)
@@ -195,7 +195,7 @@ class StrParamWidget(QWidget):
         self._edit = QLineEdit(str(value))
         self._edit.setMinimumWidth(60)
         self._edit.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Expanding, QSizePolicy.Fixed
         )
         self._edit.textChanged.connect(self.value_changed)
         layout.addWidget(self._edit)

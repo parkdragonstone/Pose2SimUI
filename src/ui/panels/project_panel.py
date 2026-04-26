@@ -6,13 +6,12 @@
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QMenu, QFileDialog,
-    QSizePolicy,
+    QSizePolicy, QAction,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSettings
-from PyQt6.QtGui import QAction
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings
 
 from src.core.project import Project
 from src.core.config_manager import ConfigManager
@@ -49,7 +48,7 @@ class ProjectPanel(QWidget):
         self._project_label = QLabel("프로젝트 없음")
         self._project_label.setObjectName("project_label")
         self._project_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+            QSizePolicy.Expanding, QSizePolicy.Preferred
         )
         header.addWidget(self._project_label)
 
@@ -100,7 +99,7 @@ class ProjectPanel(QWidget):
 
     def _on_new_project(self):
         dlg = NewProjectDialog(self)
-        if dlg.exec() == NewProjectDialog.DialogCode.Accepted:
+        if dlg.exec_() == NewProjectDialog.Accepted:
             project_path = dlg.create_project_structure()
             if project_path:
                 # Config.toml 자동 생성

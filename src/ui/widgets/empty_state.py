@@ -2,8 +2,8 @@
 빈 상태 안내 위젯 — 목록이 비었을 때 표시
 # Design Ref: §1.1 — empty_state.py
 """
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt6.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtCore import Qt
 
 
 class EmptyState(QWidget):
@@ -12,11 +12,11 @@ class EmptyState(QWidget):
     def __init__(self, message: str, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setAlignment(Qt.AlignCenter)
         layout.setContentsMargins(8, 8, 8, 8)
 
         lbl = QLabel(message)
-        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setAlignment(Qt.AlignCenter)
         lbl.setWordWrap(True)
         lbl.setStyleSheet("color: #94A3B8; font-size: 11px;")
         layout.addWidget(lbl)

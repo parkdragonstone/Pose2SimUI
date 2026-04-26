@@ -4,7 +4,7 @@ QThread 기반 베이스 워커
 # Plan SC: SC-05 — 실행 중 UI 블로킹 없음 (QThread)
 """
 import traceback
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal
 
 
 class BaseWorker(QThread):

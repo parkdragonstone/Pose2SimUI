@@ -4,13 +4,13 @@ Calibration 사이드바 섹션 — 사이드바 내 Calibration 파일 목록 +
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QListWidget, QListWidgetItem,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QIcon
 
 from src.ui.widgets.empty_state import EmptyState
 
@@ -65,10 +65,10 @@ class CalibSidebar(QWidget):
         self._list.setObjectName("calib_list")
         self._list.setSpacing(1)
         self._list.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Expanding, QSizePolicy.Expanding
         )
-        self._list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._list.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self._list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self._list)
 
@@ -104,14 +104,14 @@ class CalibSidebar(QWidget):
         self._show_empty(False)
         for f in toml_files:
             item = QListWidgetItem(f"📄 {f.name}")
-            item.setData(Qt.ItemDataRole.UserRole, f)
+            item.setData(Qt.UserRole, f)
             item.setToolTip(str(f))
             self._list.addItem(item)
 
     # ── 내부 핸들러 ──────────────────────────────────────────────────
 
     def _on_item_clicked(self, item: QListWidgetItem):
-        path: Path = item.data(Qt.ItemDataRole.UserRole)
+        path: Path = item.data(Qt.UserRole)
         if path and path.exists():
             self.calib_selected.emit(path)
 

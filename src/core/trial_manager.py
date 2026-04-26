@@ -5,7 +5,7 @@ Trial 탐지, 전환, 상태 평가
 """
 from pathlib import Path
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from src.core.project import Project, Trial
 

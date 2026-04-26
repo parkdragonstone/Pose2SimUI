@@ -7,7 +7,9 @@ import math
 import re
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+import cv2
+
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QPushButton, QLabel, QTabWidget, QComboBox,
     QSpinBox, QDoubleSpinBox,
@@ -17,12 +19,10 @@ from PyQt6.QtWidgets import (
     QDialog, QStackedWidget, QSlider,
     QGraphicsView, QGraphicsScene,
 )
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QRectF
-from PyQt6.QtGui import (
+from PyQt5.QtCore import Qt, QUrl, pyqtSignal, QRectF, QTimer
+from PyQt5.QtGui import (
     QImage, QPixmap, QFont, QPainter, QPen, QBrush, QColor,
 )
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtMultimediaWidgets import QVideoWidget
 
 from src.core.config_manager import ConfigManager
 from src.ui.widgets.empty_state import EmptyState
@@ -51,20 +51,24 @@ _MEDIA_EXTS: frozenset[str] = frozenset({
 
 def _discover_cameras(folder: Path, extensions: frozenset[str]) -> dict[str, list[Path]]:
     """
-    폴더 내 파일에서 camXX 패턴을 추출해 카메라별로 그룹핑.
+    folder/cam01/, folder/cam02/ ... 하위 폴더를 탐색하여 카메라별로 그룹핑.
+    기대 구조: folder/camXX/*.ext
     반환: {"cam01": [path1, ...], "cam02": [path2, ...], ...}
-    # Design Ref: §8.0 — discover_cameras
     """
     groups: dict[str, list[Path]] = {}
-    for f in sorted(folder.iterdir()):
-        if not f.is_file():
+    for subdir in sorted(folder.iterdir()):
+        if not subdir.is_dir():
             continue
-        if f.suffix.lower() not in extensions:
+        m = re.search(r"cam(\d+)", subdir.name, re.IGNORECASE)
+        if not m:
             continue
-        m = re.search(r"cam(\d+)", f.name, re.IGNORECASE)
-        if m:
-            key = f"cam{m.group(1).zfill(2)}"
-            groups.setdefault(key, []).append(f)
+        key = f"cam{m.group(1).zfill(2)}"
+        files = sorted(
+            f for f in subdir.iterdir()
+            if f.is_file() and f.suffix.lower() in extensions
+        )
+        if files:
+            groups[key] = files
     return dict(sorted(groups.items()))
 
 
@@ -88,8 +92,8 @@ def _load_thumbnail(path: Path, tw: int, th: int) -> QPixmap | None:
                 return None
             return px.scaled(
                 tw, th,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
             )
         # 비디오: OpenCV 첫 프레임
         import cv2
@@ -105,7 +109,7 @@ def _load_thumbnail(path: Path, tw: int, th: int) -> QPixmap | None:
         thumb = cv2.resize(frame_rgb, (nw, nh), interpolation=cv2.INTER_AREA)
         img = QImage(
             thumb.data, thumb.shape[1], thumb.shape[0],
-            thumb.strides[0], QImage.Format.Format_RGB888,
+            thumb.strides[0], QImage.Format_RGB888,
         )
         return QPixmap.fromImage(img)
     except Exception:
@@ -143,8 +147,8 @@ class _VideoCell(QWidget):
         # 썸네일 레이블 (클릭 가능)
         self._thumb = QLabel()
         self._thumb.setFixedSize(self._TW, self._TH)
-        self._thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._thumb.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._thumb.setAlignment(Qt.AlignCenter)
+        self._thumb.setCursor(Qt.PointingHandCursor)
         self._thumb.setStyleSheet(
             "background-color: #1E2433;"
             "border: 1px solid #2D3748;"
@@ -227,7 +231,7 @@ class _CamVideoGrid(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignTop)
 
         # 폴더 선택 행
         top = QHBoxLayout()
@@ -236,7 +240,7 @@ class _CamVideoGrid(QWidget):
         self._folder_lbl = QLabel("(미선택)")
         self._folder_lbl.setStyleSheet("color: #94A3B8; font-size: 11px;")
         self._folder_lbl.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+            QSizePolicy.Expanding, QSizePolicy.Preferred
         )
         top.addWidget(self._folder_lbl)
 
@@ -250,14 +254,14 @@ class _CamVideoGrid(QWidget):
         # 격자 스크롤 영역 (높이는 _refresh_grid에서 동적 계산)
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
-        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setFrameShape(QFrame.NoFrame)
         self._scroll.setMaximumHeight(400)
         self._scroll.setFixedHeight(0)
         self._scroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            Qt.ScrollBarAlwaysOff
         )
         self._scroll.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Expanding, QSizePolicy.Fixed
         )
 
         self._grid_widget = QWidget()
@@ -265,7 +269,7 @@ class _CamVideoGrid(QWidget):
         self._grid.setSpacing(8)
         self._grid.setContentsMargins(4, 4, 4, 4)
         self._grid.setAlignment(
-            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
+            Qt.AlignTop | Qt.AlignLeft
         )
         self._scroll.setWidget(self._grid_widget)
         layout.addWidget(self._scroll)
@@ -342,7 +346,7 @@ class _CamVideoGrid(QWidget):
             row_layout = QHBoxLayout(row_widget)
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(8)
-            row_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            row_layout.setAlignment(Qt.AlignLeft)
             for cam_id, path in items[row_start: row_start + cols]:
                 cell = _VideoCell(cam_id, path)
                 cell.remove_requested.connect(self._remove_cam)
@@ -387,7 +391,7 @@ class _CamTable(QWidget):
 
         self._folder_lbl = QLabel("(미선택)")
         self._folder_lbl.setStyleSheet("color: #94A3B8; font-size: 11px;")
-        self._folder_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._folder_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         top.addWidget(self._folder_lbl)
 
         browse_btn = QPushButton(f"📂 {label} 선택")
@@ -401,13 +405,13 @@ class _CamTable(QWidget):
         self._table = QTableWidget(0, 3)
         self._table.setHorizontalHeaderLabels(["카메라", "파일", ""])
         self._table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeMode.Stretch
+            1, QHeaderView.Stretch
         )
         self._table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.ResizeToContents
+            0, QHeaderView.ResizeToContents
         )
         self._table.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeMode.ResizeToContents
+            2, QHeaderView.ResizeToContents
         )
         self._table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         self._table.verticalHeader().hide()
@@ -506,11 +510,11 @@ class _ZoomableImageView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setStyleSheet("background: #0F172A; border: none; border-radius: 4px;")
         self.setMinimumSize(600, 400)
-        self.setCursor(Qt.CursorShape.CrossCursor)
+        self.setCursor(Qt.CrossCursor)
 
         self._panning = False
         self._pan_start = None
@@ -529,7 +533,7 @@ class _ZoomableImageView(QGraphicsView):
     def reset_zoom(self):
         """이미지 전체가 보이도록 뷰 리셋."""
         if self._gscene.sceneRect().isValid():
-            self.fitInView(self._gscene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self.fitInView(self._gscene.sceneRect(), Qt.KeepAspectRatio)
 
     # ── 내부 렌더링 ──────────────────────────────────────────────────
 
@@ -543,7 +547,7 @@ class _ZoomableImageView(QGraphicsView):
         h, w = self._frame.shape[:2]
         img = QImage(
             self._frame.data, w, h,
-            self._frame.strides[0], QImage.Format.Format_RGB888,
+            self._frame.strides[0], QImage.Format_RGB888,
         )
         self._pixmap_item = self._gscene.addPixmap(QPixmap.fromImage(img))
         self._gscene.setSceneRect(QRectF(0, 0, w, h))
@@ -563,7 +567,7 @@ class _ZoomableImageView(QGraphicsView):
             txt.setPos(px + r * 1.2, py - r * 1.8)
 
         if self._fit_next:
-            self.fitInView(self._gscene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self.fitInView(self._gscene.sceneRect(), Qt.KeepAspectRatio)
             self._fit_next = False
 
     # ── 이벤트 핸들러 ──────────────────────────────────────────────
@@ -578,25 +582,25 @@ class _ZoomableImageView(QGraphicsView):
 
     def mousePressEvent(self, event):
         btn = event.button()
-        if btn == Qt.MouseButton.LeftButton:
+        if btn == Qt.LeftButton:
             # 이미지 위 좌클릭 → 포인트 기록
-            scene_pos = self.mapToScene(event.position().toPoint())
+            scene_pos = self.mapToScene(event.pos())
             if (self._pixmap_item is not None
                     and self._gscene.sceneRect().contains(scene_pos)):
                 self.clicked.emit(float(scene_pos.x()), float(scene_pos.y()))
-        elif btn in (Qt.MouseButton.RightButton, Qt.MouseButton.MiddleButton):
+        elif btn in (Qt.RightButton, Qt.MiddleButton):
             # 우클릭/중간 버튼 드래그 → 팬
             self._panning = True
-            self._pan_start = event.position()
-            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            self._pan_start = event.pos()
+            self.setCursor(Qt.ClosedHandCursor)
             event.accept()
             return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._panning and self._pan_start is not None:
-            delta = event.position() - self._pan_start
-            self._pan_start = event.position()
+            delta = event.pos() - self._pan_start
+            self._pan_start = event.pos()
             self.horizontalScrollBar().setValue(
                 self.horizontalScrollBar().value() - int(delta.x())
             )
@@ -608,26 +612,26 @@ class _ZoomableImageView(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if event.button() in (Qt.MouseButton.RightButton, Qt.MouseButton.MiddleButton):
+        if event.button() in (Qt.RightButton, Qt.MiddleButton):
             self._panning = False
-            self.setCursor(Qt.CursorShape.CrossCursor)
+            self.setCursor(Qt.CrossCursor)
             event.accept()
             return
         super().mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event):
         """좌더블클릭 → 줌 리셋."""
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.LeftButton:
             self.reset_zoom()
         super().mouseDoubleClickEvent(event)
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key.Key_R:
+        if key == Qt.Key_R:
             self.reset_zoom()
-        elif key in (Qt.Key.Key_Plus, Qt.Key.Key_Equal):
+        elif key in (Qt.Key_Plus, Qt.Key_Equal):
             self.scale(self._ZOOM_STEP, self._ZOOM_STEP)
-        elif key == Qt.Key.Key_Minus:
+        elif key == Qt.Key_Minus:
             self.scale(1.0 / self._ZOOM_STEP, 1.0 / self._ZOOM_STEP)
         else:
             super().keyPressEvent(event)
@@ -635,7 +639,7 @@ class _ZoomableImageView(QGraphicsView):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if self._fit_next and self._gscene.sceneRect().isValid():
-            self.fitInView(self._gscene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self.fitInView(self._gscene.sceneRect(), Qt.KeepAspectRatio)
 
 
 class ScenePointPickerDialog(QDialog):
@@ -697,13 +701,13 @@ class ScenePointPickerDialog(QDialog):
 
         # 헤더
         self._header_lbl = QLabel()
-        self._header_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._header_lbl.setAlignment(Qt.AlignCenter)
         self._header_lbl.setStyleSheet("font-size: 14px; font-weight: bold; color: #E2E8F0; padding: 4px;")
         root.addWidget(self._header_lbl)
 
         # 안내문
         self._instr_lbl = QLabel()
-        self._instr_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._instr_lbl.setAlignment(Qt.AlignCenter)
         self._instr_lbl.setStyleSheet("font-size: 12px; color: #94A3B8; padding: 2px;")
         self._instr_lbl.setWordWrap(True)
         root.addWidget(self._instr_lbl)
@@ -712,7 +716,7 @@ class ScenePointPickerDialog(QDialog):
         hint = QLabel(
             "휠: 줌  |  우클릭 드래그: 화면 이동  |  더블클릭 / R: 줌 리셋  |  좌클릭: 기준점 선택"
         )
-        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setAlignment(Qt.AlignCenter)
         hint.setStyleSheet("font-size: 10px; color: #475569; padding: 1px;")
         root.addWidget(hint)
 
@@ -741,7 +745,7 @@ class ScenePointPickerDialog(QDialog):
         self._pts_list = QLabel()
         self._pts_list.setStyleSheet("font-size: 10px; color: #94A3B8; font-family: Menlo, Monaco;")
         self._pts_list.setWordWrap(True)
-        self._pts_list.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._pts_list.setAlignment(Qt.AlignTop)
         right_layout.addWidget(self._pts_list, 1)
 
         body.addWidget(right_panel)
@@ -916,27 +920,34 @@ class CalibResultDialog(QDialog):
         close_btn = QPushButton("닫기")
         close_btn.setFixedWidth(80)
         close_btn.clicked.connect(self.accept)
-        layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(close_btn, alignment=Qt.AlignRight)
 
 
 # ── 인라인 단일 비디오 플레이어 ──────────────────────────────────────
 
+_IMAGE_PLAYER_EXTS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif"})
+_VIDEO_PLAYER_EXTS = frozenset({".avi", ".mp4", ".mov", ".mkv", ".wmv"})
+
+
 class _InlineVideoPlayer(QWidget):
     """
-    썸네일 클릭 시 나타나는 인라인 비디오 플레이어.
-    QMediaPlayer + QVideoWidget + Play/Pause/Stop/Slider 컨트롤.
+    썸네일 클릭 시 나타나는 인라인 미디어 플레이어.
+    - 이미지 파일(PNG/JPG 등): QPixmap으로 정적 표시
+    - 영상 파일(AVI/MP4 등): OpenCV 프레임 디코딩으로 재생
+    QMediaPlayer/QVideoWidget 미사용 — 포맷 무관하게 동작.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._player = QMediaPlayer(self)
-        self._audio  = QAudioOutput(self)
-        self._player.setAudioOutput(self._audio)
-        self._audio.setVolume(0.8)
+        self._cap: cv2.VideoCapture | None = None
+        self._total_frames = 0
+        self._fps          = 30.0
+        self._current_frame = 0
+        self._playing      = False
+        self._is_image     = False
+        self._timer        = QTimer(self)
+        self._timer.timeout.connect(self._tick)
         self._setup_ui()
-        self._player.positionChanged.connect(self._on_position)
-        self._player.durationChanged.connect(self._on_duration)
-        self._player.playbackStateChanged.connect(self._on_state)
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -963,12 +974,13 @@ class _InlineVideoPlayer(QWidget):
         header.addWidget(close_btn)
         layout.addLayout(header)
 
-        # 비디오 위젯
-        self._video_widget = QVideoWidget()
-        self._video_widget.setMinimumHeight(180)
-        self._video_widget.setStyleSheet("background-color: #0F172A;")
-        self._player.setVideoOutput(self._video_widget)
-        layout.addWidget(self._video_widget, 1)
+        # 표시 영역 (QLabel에 QPixmap 렌더링)
+        self._display = QLabel()
+        self._display.setMinimumHeight(180)
+        self._display.setAlignment(Qt.AlignCenter)
+        self._display.setStyleSheet("background-color: #0F172A;")
+        self._display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout.addWidget(self._display, 1)
 
         # 컨트롤 바
         ctrl = QHBoxLayout()
@@ -980,10 +992,10 @@ class _InlineVideoPlayer(QWidget):
         self._play_btn.clicked.connect(self._toggle_play)
         ctrl.addWidget(self._play_btn)
 
-        self._slider = QSlider(Qt.Orientation.Horizontal)
+        self._slider = QSlider(Qt.Horizontal)
         self._slider.setRange(0, 1000)
         self._slider.setStyleSheet(_SLIDER_SS)
-        self._slider.sliderMoved.connect(self._seek)
+        self._slider.sliderMoved.connect(self._seek_from_slider)
         ctrl.addWidget(self._slider, 1)
 
         self._time_lbl = QLabel("0:00 / 0:00")
@@ -992,50 +1004,129 @@ class _InlineVideoPlayer(QWidget):
 
         layout.addLayout(ctrl)
 
+    # ── 공개 API ─────────────────────────────────────────────
+
     def load(self, cam_id: str, path: Path):
+        self._stop_playback()
         self._title_lbl.setText(f"{cam_id}  —  {path.name}")
-        self._player.setSource(QUrl.fromLocalFile(str(path)))
-        self._player.play()
+        ext = path.suffix.lower()
+
+        if ext in _IMAGE_PLAYER_EXTS:
+            self._is_image = True
+            self._play_btn.setEnabled(False)
+            self._slider.setEnabled(False)
+            self._time_lbl.setText("")
+            px = QPixmap(str(path))
+            if not px.isNull():
+                self._display.setPixmap(
+                    px.scaled(self._display.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                )
+            else:
+                self._display.setText("이미지를 불러올 수 없습니다")
+        else:
+            self._is_image = False
+            self._play_btn.setEnabled(True)
+            self._slider.setEnabled(True)
+            if self._cap:
+                self._cap.release()
+            self._cap = cv2.VideoCapture(str(path))
+            self._fps = self._cap.get(cv2.CAP_PROP_FPS) or 30.0
+            self._total_frames = max(1, int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+            self._current_frame = 0
+            self._seek_to(0, smooth=True)
+            self._update_ui()
+            self._start_playback()
+
+    # ── 내부 헬퍼 ────────────────────────────────────────────
+
+    def _seek_to(self, frame_no: int, smooth: bool = False):
+        """랜덤 접근 — seek 시에만 사용."""
+        if not self._cap or not self._cap.isOpened():
+            return
+        frame_no = max(0, min(frame_no, self._total_frames - 1))
+        self._cap.set(cv2.CAP_PROP_POS_FRAMES, frame_no)
+        ret, frame = self._cap.read()
+        if ret:
+            self._current_frame = frame_no
+            self._render(frame, smooth=smooth)
+
+    def _render(self, frame_bgr, smooth: bool = False):
+        rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        h, w = rgb.shape[:2]
+        img = QImage(rgb.data, w, h, rgb.strides[0], QImage.Format_RGB888)
+        px = QPixmap.fromImage(img)
+        tf = Qt.SmoothTransformation if smooth else Qt.FastTransformation
+        self._display.setPixmap(
+            px.scaled(self._display.size(), Qt.KeepAspectRatio, tf)
+        )
+
+    def _update_ui(self):
+        fps = self._fps or 30.0
+        cur = self._current_frame / fps
+        tot = self._total_frames / fps
+        self._time_lbl.setText(f"{self._fmt_s(cur)} / {self._fmt_s(tot)}")
+        if self._total_frames > 1:
+            self._slider.blockSignals(True)
+            self._slider.setValue(int(self._current_frame * 1000 / (self._total_frames - 1)))
+            self._slider.blockSignals(False)
+
+    def _tick(self):
+        """순차 읽기 — cap.set() 없이 다음 프레임 읽기."""
+        if not self._cap:
+            return
+        ret, frame = self._cap.read()
+        if not ret or self._current_frame + 1 >= self._total_frames:
+            self._stop_playback()
+            return
+        self._current_frame += 1
+        self._render(frame, smooth=False)
+        self._update_ui()
+
+    def _start_playback(self):
+        self._playing = True
+        self._play_btn.setText("PAUSE")
+        interval = max(1, int(1000 / self._fps))
+        self._timer.start(interval)
+
+    def _stop_playback(self):
+        self._timer.stop()
+        self._playing = False
+        self._play_btn.setText("PLAY")
 
     def _toggle_play(self):
-        if self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
-            self._player.pause()
+        if self._is_image:
+            return
+        if self._playing:
+            self._stop_playback()
+            self._seek_to(self._current_frame, smooth=True)
         else:
-            self._player.play()
+            if self._current_frame >= self._total_frames - 1:
+                self._seek_to(0)
+            self._start_playback()
 
-    def _stop(self):
-        self._player.stop()
-
-    def _seek(self, pos: int):
-        dur = self._player.duration()
-        if dur > 0:
-            self._player.setPosition(int(dur * pos / 1000))
-
-    def _on_position(self, pos_ms: int):
-        dur = self._player.duration()
-        if dur > 0:
-            self._slider.blockSignals(True)
-            self._slider.setValue(int(pos_ms * 1000 / dur))
-            self._slider.blockSignals(False)
-        self._time_lbl.setText(f"{self._fmt(pos_ms)} / {self._fmt(dur)}")
-
-    def _on_duration(self, dur: int):
-        self._time_lbl.setText(f"0:00 / {self._fmt(dur)}")
-
-    def _on_state(self, state):
-        if state == QMediaPlayer.PlaybackState.PlayingState:
-            self._play_btn.setText("PAUSE")
-        else:
-            self._play_btn.setText("PLAY")
-
-    @staticmethod
-    def _fmt(ms: int) -> str:
-        s = ms // 1000
-        return f"{s // 60}:{s % 60:02d}"
+    def _seek_from_slider(self, value: int):
+        if self._is_image or not self._cap:
+            return
+        was_playing = self._playing
+        if was_playing:
+            self._timer.stop()
+        frame_no = int(value * (self._total_frames - 1) / 1000)
+        self._seek_to(frame_no, smooth=False)
+        self._update_ui()
+        if was_playing:
+            self._timer.start(max(1, int(1000 / self._fps)))
 
     def _close_player(self):
-        self._player.stop()
+        self._stop_playback()
+        if self._cap:
+            self._cap.release()
+            self._cap = None
         self.hide()
+
+    @staticmethod
+    def _fmt_s(seconds: float) -> str:
+        s = int(seconds)
+        return f"{s // 60}:{s % 60:02d}"
 
 
 # ── Intrinsic 미디어 위젯 (중앙 배치) ───────────────────────────────
@@ -1050,12 +1141,12 @@ class _IntrinsicMediaWidget(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self._cam_grid = _CamVideoGrid(
             label="intrinsic 폴더",
-            extensions=_VIDEO_EXTS,
+            extensions=_MEDIA_EXTS,
             hint_subdir="calibration/intrinsics",
         )
         self._cam_grid.play_requested.connect(self._on_play_requested)
@@ -1067,7 +1158,7 @@ class _IntrinsicMediaWidget(QScrollArea):
         layout = QVBoxLayout(inner)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignTop)
         layout.addWidget(self._cam_grid)
         layout.addWidget(self._player)
         self.setWidget(inner)
@@ -1099,8 +1190,8 @@ class _ExtrinsicMediaWidget(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self._current_method = 0
 
@@ -1117,7 +1208,7 @@ class _ExtrinsicMediaWidget(QScrollArea):
         self._kp_info = QLabel(
             "Keypoints 모드\n포즈 추정 결과를 자동으로 사용합니다.\n별도 미디어 입력이 필요 없습니다."
         )
-        self._kp_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._kp_info.setAlignment(Qt.AlignCenter)
         self._kp_info.setStyleSheet("color: #64748B; font-size: 13px;")
         self._kp_info.hide()
         self._scene_grid.hide()
@@ -1125,7 +1216,7 @@ class _ExtrinsicMediaWidget(QScrollArea):
         inner = QWidget()
         layout = QVBoxLayout(inner)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignTop)
         layout.addWidget(self._checker_grid)
         layout.addWidget(self._scene_grid)
         layout.addWidget(self._kp_info)
@@ -1196,7 +1287,7 @@ class CalibSettingsPanel(QWidget):
         # 스크롤 영역
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setFrameShape(QFrame.NoFrame)
 
         inner = QWidget()
         inner_layout = QVBoxLayout(inner)
@@ -1221,10 +1312,10 @@ class CalibSettingsPanel(QWidget):
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignTop)
 
         form = QFormLayout()
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        form.setLabelAlignment(Qt.AlignRight)
         form.setSpacing(6)
         form.setFieldGrowthPolicy(
             QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
@@ -1233,7 +1324,7 @@ class CalibSettingsPanel(QWidget):
         self._intr_board_type = QComboBox()
         self._intr_board_type.addItems(["Checkerboard", "CharucoBoard", "CirclesGrid"])
         self._intr_board_type.setSizeAdjustPolicy(
-            QComboBox.SizeAdjustPolicy.AdjustToContents
+            QComboBox.AdjustToContents
         )
         self._intr_board_type.setMinimumContentsLength(14)
         form.addRow("Board Type:", self._intr_board_type)
@@ -1269,13 +1360,13 @@ class CalibSettingsPanel(QWidget):
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setAlignment(Qt.AlignTop)
 
         # Method 선택
         method_group = QGroupBox("Method")
         # 남는 세로 공간이 Method 그룹에 배분되며 아래 위젯이 밀리는 현상 방지
         method_group.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+            QSizePolicy.Preferred, QSizePolicy.Fixed
         )
         method_layout = QHBoxLayout(method_group)
         method_layout.setSpacing(4)
@@ -1290,8 +1381,8 @@ class CalibSettingsPanel(QWidget):
         # 파라미터 영역: QStackedWidget으로 Checkerboard/Scene/Keypoints 중 1개만 참여
         self._params_stack = QStackedWidget()
         self._params_stack.setSizePolicy(
-            QSizePolicy.Policy.Preferred,
-            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Preferred,
+            QSizePolicy.Fixed,
         )
 
         # idx 0: Checkerboard 파라미터 위젯
@@ -1299,7 +1390,7 @@ class CalibSettingsPanel(QWidget):
         chk_form = QFormLayout(self._chk_widget)
         chk_form.setContentsMargins(0, 0, 0, 0)
         chk_form.setSpacing(6)
-        chk_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        chk_form.setLabelAlignment(Qt.AlignRight)
         chk_form.setFieldGrowthPolicy(
             QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
         )
@@ -1307,7 +1398,7 @@ class CalibSettingsPanel(QWidget):
         self._chk_board_type = QComboBox()
         self._chk_board_type.addItems(["Checkerboard", "CharucoBoard", "CirclesGrid"])
         self._chk_board_type.setSizeAdjustPolicy(
-            QComboBox.SizeAdjustPolicy.AdjustToContents
+            QComboBox.AdjustToContents
         )
         self._chk_board_type.setMinimumContentsLength(14)
         chk_form.addRow("Board Type:", self._chk_board_type)
@@ -1334,7 +1425,7 @@ class CalibSettingsPanel(QWidget):
         scene_layout = QVBoxLayout(self._scene_widget)
         scene_layout.setContentsMargins(0, 0, 0, 0)
         scene_layout.setSpacing(4)
-        scene_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scene_layout.setAlignment(Qt.AlignTop)
         coords_hint = QLabel("3D 기준점 좌표 (각 줄: X Y Z)")
         coords_hint.setStyleSheet("color: #64748B; font-size: 11px;")
         scene_layout.addWidget(coords_hint)
@@ -1417,20 +1508,20 @@ class CalibSettingsPanel(QWidget):
                         pass
 
             if not points_3d:
-                from PyQt6.QtWidgets import QMessageBox
+                from PyQt5.QtWidgets import QMessageBox
                 QMessageBox.warning(
                     self, "입력 오류",
                     "3D 기준점 좌표를 입력하세요.\n형식: 각 줄에 X Y Z (예: 0 0 0)"
                 )
                 return
             if not cam_files:
-                from PyQt6.QtWidgets import QMessageBox
+                from PyQt5.QtWidgets import QMessageBox
                 QMessageBox.warning(self, "입력 오류", "Extrinsic 미디어 파일을 먼저 선택하세요.")
                 return
 
             # Qt 포인트 피커 다이얼로그 → macOS 메인 스레드에서 실행
             dlg = ScenePointPickerDialog(cam_files, points_3d, self.window())
-            if dlg.exec() != ScenePointPickerDialog.DialogCode.Accepted:
+            if dlg.exec_() != ScenePointPickerDialog.Accepted:
                 return
             params["image_coords_2d"] = dlg.get_image_coords()
 
@@ -1445,7 +1536,7 @@ class CalibSettingsPanel(QWidget):
         dlg = CalibResultDialog(
             titles.get(step, "결과"), text, self.window()
         )
-        dlg.exec()
+        dlg.exec_()
 
     def set_active_tab(self, idx: int):
         """CalibPanel 탭 전환과 동기화."""
@@ -1539,7 +1630,7 @@ class CalibPanel(QWidget):
         layout.addWidget(header_widget)
 
         divider = QFrame()
-        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFrameShape(QFrame.HLine)
         divider.setFixedHeight(1)
         divider.setStyleSheet("background-color: #E2E8F0; border: none;")
         layout.addWidget(divider)

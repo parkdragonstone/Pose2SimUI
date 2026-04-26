@@ -3,12 +3,12 @@
 # Design Ref: §2.1 — Log Panel: 항상 펼쳐진 상태, 접기 없음
 # Plan NFR-05 — 최대 10,000 라인 유지 (메모리 관리)
 """
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QPlainTextEdit,
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QTextCursor, QFont
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QTextCursor, QFont
 
 
 MAX_LOG_LINES = 10_000

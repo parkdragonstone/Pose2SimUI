@@ -3,13 +3,13 @@
 # Design Ref: §2.2 — Step Cards: 상태 배지, 진행률, Run 버튼
 # Design Ref: §9   — 에러 처리: Worker 실패 → 빨간 상태 표시
 """
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QPushButton, QProgressBar,
     QSizePolicy,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QColor
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QColor
 
 
 class StepStatus:
@@ -64,7 +64,7 @@ class StepCard(QWidget):
         # 상태 아이콘
         self._icon_label = QLabel(_STATUS_ICON[self._status])
         self._icon_label.setFixedWidth(22)
-        self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._icon_label.setAlignment(Qt.AlignCenter)
         outer.addWidget(self._icon_label)
 
         # 단계 이름 + 진행률 바

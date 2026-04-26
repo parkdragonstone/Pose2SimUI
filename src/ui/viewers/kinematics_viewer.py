@@ -4,12 +4,12 @@ Kinematics 관절 각도 뷰어 — 토글 버튼 그리드 + 흰 배경 pyqtgra
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QSizePolicy, QComboBox,
 )
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QPixmap, QPainter, QColor, QIcon
 
 try:
     import pyqtgraph as pg
@@ -192,7 +192,7 @@ class KinematicsViewerWidget(QWidget):
         self._plot.showGrid(x=False, y=True, alpha=0.3)
         self._plot.setMinimumHeight(240)
         self._plot.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Expanding, QSizePolicy.Expanding
         )
         # 축 색상: 검정
         for axis in ("left", "bottom"):

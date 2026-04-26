@@ -6,14 +6,14 @@ Config.toml 폼 에디터 패널
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QStackedWidget, QListWidget, QListWidgetItem,
     QLabel,
     QPushButton, QScrollArea,
     QSizePolicy, QFrame,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt
 
 from src.core.config_manager import ConfigManager
 from src.ui.widgets.param_widget import make_param_widget
@@ -74,7 +74,7 @@ class _SectionTab(QScrollArea):
             "QComboBox, QCheckBox, QGroupBox { font-size: 11px; }"
         )
         outer_layout = QVBoxLayout(inner)
-        outer_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        outer_layout.setAlignment(Qt.AlignTop)
         outer_layout.setSpacing(2)
         outer_layout.setContentsMargins(12, 8, 12, 8)
 
@@ -163,7 +163,7 @@ class _SectionTab(QScrollArea):
 
             if i < len(items) - 1:
                 sep = QFrame()
-                sep.setFrameShape(QFrame.Shape.HLine)
+                sep.setFrameShape(QFrame.HLine)
                 sep.setStyleSheet("color: #E2E8F0; margin: 0px;")
                 vl.addWidget(sep)
 
@@ -207,12 +207,12 @@ class ConfigPanel(QWidget):
         toolbar_widget.setStyleSheet("background-color: #F8FAFC;")
         toolbar = QHBoxLayout(toolbar_widget)
         toolbar.setContentsMargins(8, 4, 8, 4)
-        toolbar.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        toolbar.setAlignment(Qt.AlignVCenter)
 
         self._path_label = QLabel("설정 파일: (없음)")
         self._path_label.setStyleSheet("color: #64748B; font-size: 11px;")
         self._path_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+            QSizePolicy.Expanding, QSizePolicy.Preferred
         )
         toolbar.addWidget(self._path_label)
 
@@ -232,7 +232,7 @@ class ConfigPanel(QWidget):
 
         # border-bottom을 별도 QFrame으로 분리 (부모 border가 자식을 클리핑하는 Qt 이슈 방지)
         divider = QFrame()
-        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFrameShape(QFrame.HLine)
         divider.setFixedHeight(1)
         divider.setStyleSheet("background-color: #E2E8F0; border: none;")
         layout.addWidget(divider)
@@ -245,7 +245,7 @@ class ConfigPanel(QWidget):
         # 좌측 섹션 리스트
         self._section_list = QListWidget()
         self._section_list.setFixedWidth(100)
-        self._section_list.setFrameShape(QFrame.Shape.NoFrame)
+        self._section_list.setFrameShape(QFrame.NoFrame)
         self._section_list.setStyleSheet(
             "QListWidget {"
             "  background-color: #F8FAFC;"

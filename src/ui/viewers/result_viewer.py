@@ -2,11 +2,11 @@
 결과 뷰어 컨테이너 — 영상/3D/Kinematics 플랫 수직 스택 (collapse 없음)
 # Design Ref: §2.1 — ResultViewerWidget: 플랫 레이아웃, Trial 선택 시 중앙 패널에 표시
 """
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QScrollArea, QWidget, QVBoxLayout,
     QLabel, QSizePolicy, QFrame,
 )
-from PyQt6.QtCore import Qt  # noqa: F401 — Qt flags used in _section_header
+from PyQt5.QtCore import Qt  # noqa: F401 — Qt flags used in _section_header
 
 from src.core.project import Trial
 from src.ui.viewers.video_player import VideoPlayerWidget
@@ -39,7 +39,7 @@ def _section_header(title: str) -> QLabel:
         "font-weight: 600; font-size: 12px; color: #1E293B;"
         "padding: 5px 12px;"
     )
-    lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     return lbl
 
 
@@ -55,8 +55,8 @@ class ResultViewerWidget(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # ── 뷰어 위젯 인스턴스 ────────────────────────────────────
         self.video_player = VideoPlayerWidget()

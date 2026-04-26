@@ -5,13 +5,13 @@ Trial 목록 패널 — 사이드바 하단, Trial 항목 + 상태 배지
 """
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QListWidget, QListWidgetItem, QSizePolicy,
     QPushButton,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor
 
 from src.core.project import Project, Trial
 from src.core.trial_manager import TrialManager
@@ -43,13 +43,13 @@ class TrialPanel(QWidget):
         # ── 헤더 ─────────────────────────────────────────────────────
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
-        header.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        header.setAlignment(Qt.AlignVCenter)
 
         title = QLabel("Trials")
         title.setStyleSheet(
             "font-size: 11px; font-weight: 600; color: #94A3B8; letter-spacing: 0.5px;"
         )
-        header.addWidget(title, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(title, 0, Qt.AlignVCenter)
         header.addStretch()
 
         refresh_btn = QPushButton("↺")
@@ -59,7 +59,7 @@ class TrialPanel(QWidget):
             "QPushButton { font-size: 13px; padding: 0; margin: 0; text-align: center; }"
         )
         refresh_btn.clicked.connect(self._refresh)
-        header.addWidget(refresh_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(refresh_btn, 0, Qt.AlignVCenter)
 
         layout.addLayout(header)
 
@@ -68,7 +68,7 @@ class TrialPanel(QWidget):
         self._list.setObjectName("trial_list")
         self._list.setSpacing(1)
         self._list.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Expanding, QSizePolicy.Expanding
         )
         self._list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self._list)
@@ -113,12 +113,12 @@ class TrialPanel(QWidget):
         badge = trial.status_label
         text = f"{trial.name}  {badge}" if badge else trial.name
         item = QListWidgetItem(text)
-        item.setData(Qt.ItemDataRole.UserRole, trial)
+        item.setData(Qt.UserRole, trial)
         item.setToolTip(str(trial.path))
         return item
 
     def _on_item_clicked(self, item: QListWidgetItem):
-        trial: Trial = item.data(Qt.ItemDataRole.UserRole)
+        trial: Trial = item.data(Qt.UserRole)
         if trial:
             self._manager.switch_trial(trial)
             self.trial_selected.emit(trial)
@@ -127,7 +127,7 @@ class TrialPanel(QWidget):
         """trial_status_changed Signal → 해당 항목 배지 갱신."""
         for i in range(self._list.count()):
             item = self._list.item(i)
-            trial: Trial = item.data(Qt.ItemDataRole.UserRole)
+            trial: Trial = item.data(Qt.UserRole)
             if trial and trial.name == trial_name:
                 # Trial 객체의 상태를 재평가해 텍스트 갱신
                 badge = trial.status_label

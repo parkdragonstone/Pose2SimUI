@@ -6,13 +6,12 @@
 import re
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QSplitter,
     QVBoxLayout, QHBoxLayout, QStackedWidget,
-    QLabel, QFrame, QSizePolicy, QStatusBar,
+    QLabel, QFrame, QSizePolicy, QStatusBar, QAction,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from src.core.project import Project, Trial
 from src.core.pipeline_runner import PipelineRunner
@@ -30,10 +29,10 @@ class _PlaceholderWidget(QWidget):
     def __init__(self, label: str, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setAlignment(Qt.AlignCenter)
         lbl = QLabel(label)
         lbl.setStyleSheet("color: gray; font-size: 14px;")
-        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl)
 
 
@@ -42,20 +41,20 @@ class _WelcomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(16)
 
         title = QLabel("Pose2SimUI")
         title.setObjectName("welcome_title")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setAlignment(Qt.AlignCenter)
 
         sub = QLabel("왼쪽 패널에서 프로젝트를 열거나 생성하세요.")
         sub.setObjectName("welcome_sub")
-        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub.setAlignment(Qt.AlignCenter)
 
         hint = QLabel("Ctrl+N  새 프로젝트   |   Ctrl+O  기존 프로젝트 열기")
         hint.setStyleSheet("color: #94A3B8; font-size: 11px;")
-        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setAlignment(Qt.AlignCenter)
 
         layout.addWidget(title)
         layout.addWidget(sub)
@@ -114,7 +113,7 @@ class MainWindow(QMainWindow):
         root_layout.setSpacing(0)
 
         # ── 최상위 수평 스플리터: 사이드바 | 중앙 | 오른쪽 패널 ────────
-        main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_splitter = QSplitter(Qt.Horizontal)
         main_splitter.setHandleWidth(1)
         root_layout.addWidget(main_splitter, 1)
 
@@ -209,7 +208,7 @@ class MainWindow(QMainWindow):
         # Trial 패널 (M7)
         self._trial_panel = TrialPanel()
         self._trial_panel.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Expanding, QSizePolicy.Expanding
         )
         self._trial_panel.hide()   # 프로젝트 열기 전 숨김
         self._trial_panel.trial_selected.connect(self.switch_to_trial_panel)
@@ -222,8 +221,8 @@ class MainWindow(QMainWindow):
 
     def _make_separator(self) -> QFrame:
         sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
         return sep
 
     def _setup_menu(self):
@@ -627,10 +626,10 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def _show_about(self):
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt5.QtWidgets import QMessageBox
         QMessageBox.about(
             self, "Pose2SimUI 정보",
             "<b>Pose2SimUI v0.1.0</b><br><br>"
             "Pose2Sim 바이오메카닉스 파이프라인을 위한 GUI 앱.<br>"
-            "PyQt6 기반, 크로스플랫폼 (macOS / Windows).",
+            "PyQt5 기반, 크로스플랫폼 (macOS / Windows).",
         )

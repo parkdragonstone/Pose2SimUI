@@ -7,12 +7,12 @@ from pathlib import Path
 import math
 
 import numpy as np
-from PyQt6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QSlider, QLabel, QComboBox,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer
 
 try:
     from matplotlib.figure import Figure
@@ -112,14 +112,14 @@ class _Canvas3D(FigureCanvasQTAgg):
 
     # ── 우클릭: 이동 시작 ────────────────────────────────────────
     def mousePressEvent(self, event):
-        if self._ax3d and event.button() == Qt.MouseButton.RightButton:
+        if self._ax3d and event.button() == Qt.RightButton:
             self._pan_last = (event.pos().x(), event.pos().y())
             event.accept()
         else:
             super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
+        if event.button() == Qt.RightButton:
             self._pan_last = None
             event.accept()
         else:
@@ -127,7 +127,7 @@ class _Canvas3D(FigureCanvasQTAgg):
 
     # ── 우클릭 드래그: _view_center 이동 후 재렌더 ──────────────
     def mouseMoveEvent(self, event):
-        if (self._pan_last and self._ax3d and event.buttons() & Qt.MouseButton.RightButton):
+        if (self._pan_last and self._ax3d and event.buttons() & Qt.RightButton):
             dx = (event.pos().x() - self._pan_last[0]) / max(self.width(), 1)
             dy = (event.pos().y() - self._pan_last[1]) / max(self.height(), 1)
             self._pan_last = (event.pos().x(), event.pos().y())
@@ -194,10 +194,10 @@ class Viewer3DWidget(QWidget):
         tl.setSpacing(8)
         lbl = QLabel("데이터")
         lbl.setStyleSheet("color:#64748B; font-size:11px;")
-        lbl.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         tl.addWidget(lbl)
         self._file_combo = QComboBox()
-        self._file_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._file_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self._file_combo.currentIndexChanged.connect(self._on_file_selected)
         tl.addWidget(self._file_combo)
         layout.addWidget(top_bar)
@@ -211,14 +211,14 @@ class Viewer3DWidget(QWidget):
         self._play_btn.setFixedSize(62, 26)
         self._play_btn.clicked.connect(self._toggle_play)
         cl.addWidget(self._play_btn)
-        self._frame_slider = QSlider(Qt.Orientation.Horizontal)
+        self._frame_slider = QSlider(Qt.Horizontal)
         self._frame_slider.setRange(0, 0)
         self._frame_slider.setStyleSheet(_SLIDER_SS)
         self._frame_slider.sliderMoved.connect(self._seek)
         cl.addWidget(self._frame_slider, 1)
         self._frame_label = QLabel("0 / 0")
         self._frame_label.setStyleSheet("color:#64748B; font-size:11px; min-width:60px;")
-        self._frame_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self._frame_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         cl.addWidget(self._frame_label)
         layout.addWidget(ctrl_bar)
 
