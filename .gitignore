@@ -19,5 +19,6 @@ demo/trial1/pose-sync
 demo/calibration/debug_images
 demo/calibration/Calib_scene.toml
 demo/calibration/*.json
+demo/calibration/*.trc
 *.toml
 *.DS_Store
