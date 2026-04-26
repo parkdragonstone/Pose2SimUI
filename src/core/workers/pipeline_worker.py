@@ -84,9 +84,9 @@ def _subprocess_entry(step_key: str, working_dir: str, log_queue):
             return
         fn_map[step_key]()
         log_queue.put(("done", True))
-    except Exception as e:
+    except BaseException as e:
         import traceback
-        log_queue.put(("log", f"[ERROR] {e}"))
+        log_queue.put(("log", f"[ERROR] {type(e).__name__}: {e}"))
         log_queue.put(("log", traceback.format_exc()))
         log_queue.put(("done", False))
     finally:
@@ -313,9 +313,9 @@ def _calib_subprocess_entry(step: str, config_dict: dict, image_coords_2d, worki
         from Pose2Sim import Pose2Sim as P2S
         P2S.calibration(config_dict)
         log_queue.put(("done", True))
-    except Exception as e:
+    except BaseException as e:
         import traceback as _tb
-        log_queue.put(("log", f"[ERROR] {e}"))
+        log_queue.put(("log", f"[ERROR] {type(e).__name__}: {e}"))
         log_queue.put(("log", _tb.format_exc()))
         log_queue.put(("done", False))
     finally:

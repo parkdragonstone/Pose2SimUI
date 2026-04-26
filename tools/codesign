@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Wrapper: strip --timestamp when doing ad-hoc signing (-s -)
+# macOS 15+ rejects --timestamp with ad-hoc identity, causing PyInstaller to fail.
+# This wrapper intercepts the codesign call and removes the incompatible flag.
+ARGS=("$@")
+IS_ADHOC=false
+
+prev=""
+for arg in "${ARGS[@]}"; do
+    if [[ "$prev" == "-s" && "$arg" == "-" ]]; then IS_ADHOC=true; break; fi
+    prev="$arg"
+done
+
+FILTERED=()
+for arg in "${ARGS[@]}"; do
+    if [[ "$IS_ADHOC" == "true" && "$arg" == "--timestamp" ]]; then continue; fi
+    FILTERED+=("$arg")
+done
+
+exec /usr/bin/codesign "${FILTERED[@]}"

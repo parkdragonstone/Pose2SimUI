@@ -14,13 +14,19 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer
 
+_MPL_AVAILABLE = False
+_MPL_ERROR = ""
 try:
+    import matplotlib
+    matplotlib.use("Qt5Agg")
     from matplotlib.figure import Figure
-    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  — registers 3d projection
+    import mpl_toolkits.mplot3d.axes3d  # noqa: F401
+    import mpl_toolkits.mplot3d.art3d   # noqa: F401
     _MPL_AVAILABLE = True
-except Exception:
-    _MPL_AVAILABLE = False
+except Exception as _e:
+    _MPL_ERROR = str(_e)
 
 from src.core.project import Trial
 from src.core.trc_parser import TRCData, parse_trc
@@ -182,8 +188,7 @@ class Viewer3DWidget(QWidget):
 
         if not _MPL_AVAILABLE:
             layout.addWidget(EmptyState(
-                "matplotlib를 불러올 수 없습니다.\n"
-                "pip install matplotlib 을 실행해주세요."
+                f"3D 뷰어를 초기화할 수 없습니다.\n{_MPL_ERROR}"
             ))
             return
 
@@ -372,7 +377,9 @@ class Viewer3DWidget(QWidget):
     def _load_trc(self, path: Path):
         try:
             self.load_trc(parse_trc(path))
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[Viewer3D] _load_trc failed: {e}\n{traceback.format_exc()}")
             self._show_empty(True)
 
     def _on_file_selected(self, idx: int):

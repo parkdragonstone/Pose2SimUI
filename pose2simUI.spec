@@ -12,28 +12,34 @@ from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 ROOT = Path(SPECPATH)
 
 # ── Hidden imports ────────────────────────────────────────────────────────────
-# PyQt6 plugins are found automatically by PyInstaller >= 6.0 on most platforms,
+# PyQt5 plugins are found automatically by PyInstaller >= 6.0 on most platforms,
 # but we list the ones that ship as Python sub-packages to be safe.
 hidden_imports = [
-    # PyQt6 bindings used at runtime
-    "PyQt6.QtWidgets",
-    "PyQt6.QtCore",
-    "PyQt6.QtGui",
-    "PyQt6.QtMultimedia",
-    "PyQt6.QtMultimediaWidgets",
-    # matplotlib Qt6 backend
+    # PyQt5 bindings used at runtime
+    "PyQt5.QtWidgets",
+    "PyQt5.QtCore",
+    "PyQt5.QtGui",
+    "PyQt5.QtMultimedia",
+    "PyQt5.QtMultimediaWidgets",
+    # matplotlib Qt5 backend (명시적으로 PyQt5 백엔드 지정)
+    "matplotlib.backends.backend_qt5agg",
     "matplotlib.backends.backend_qtagg",
+    "matplotlib.backends._backend_tk",
     # mpl_toolkits needed for Axes3D
     "mpl_toolkits.mplot3d",
+    "mpl_toolkits.mplot3d.axes3d",
+    "mpl_toolkits.mplot3d.art3d",
     # stdlib — tomllib (3.11+)
     "tomllib",
     # tomli-w (third-party write)
     "tomli_w",
-    # numpy / cv2 side-modules sometimes missed
-    "numpy.core._methods",
-    "numpy.lib.format",
+    # cv2
     "cv2",
 ]
+
+# NumPy 2.x restructured internals into numpy._core (private package).
+# PyInstaller's hook misses it; collect_submodules ensures everything is bundled.
+hidden_imports += collect_submodules("numpy")
 
 # ── Data files ────────────────────────────────────────────────────────────────
 datas = []
@@ -44,6 +50,9 @@ datas += collect_data_files("matplotlib")
 # mpl_toolkits
 datas += collect_data_files("mpl_toolkits")
 
+# Pose2Sim 데이터 파일 (LSTM 모델, OpenSim 설정 등 321개 파일)
+datas += collect_data_files("Pose2Sim")
+
 # ── Analysis ──────────────────────────────────────────────────────────────────
 a = Analysis(
     [str(ROOT / "main.py")],
@@ -51,16 +60,17 @@ a = Analysis(
     binaries=[],
     datas=datas,
     hiddenimports=hidden_imports,
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
+    hookspath=[str(ROOT / "hooks")],
+    hooksconfig={
+        "matplotlib": {"backends": ["Qt5Agg", "Agg"]},
+    },
+    runtime_hooks=[str(ROOT / "hooks" / "pyi_rth_cv2_fix.py")],
     excludes=[
         # test / dev dependencies
         "pytest", "pytest_qt", "sphinx",
         # heavy ML libs not needed at runtime
         "torch", "tensorflow",
-        # tkinter (PyInstaller sometimes drags it in via matplotlib)
-        "_tkinter", "tkinter",
+        # tkinter은 Pose2Sim/common.py가 모듈 레벨에서 import하므로 번들 필요
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -87,7 +97,7 @@ exe = EXE(
     target_arch=None,     # None = native arch; set "universal2" for fat binary
     codesign_identity=None,
     entitlements_file=None,
-    # icon="assets/icon.icns",   # uncomment after adding icon
+    icon=str(ROOT / "images" / "icon.icns"),
 )
 
 coll = COLLECT(
@@ -106,7 +116,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Pose2SimUI.app",
-        # icon="assets/icon.icns",
+        icon=str(ROOT / "images" / "icon.icns"),
         bundle_identifier="com.pose2simui.app",
         info_plist={
             "CFBundleShortVersionString": "1.0.0",
