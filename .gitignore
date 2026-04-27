@@ -24,5 +24,5 @@ demo/calibration/*.trc
 demo/calibration/intrinsics/cam01/*.png
 demo/calibration/intrinsics/cam02/*.png
 *.toml
-*.DS_Store
+**.DS_Store**
 *.vscode
