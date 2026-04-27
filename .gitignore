@@ -21,6 +21,8 @@ demo/calibration/debug_images
 demo/calibration/Calib_scene.toml
 demo/calibration/*.json
 demo/calibration/*.trc
+demo/calibration/intrinsics/cam01/*.png
+demo/calibration/intrinsics/cam02/*.png
 *.toml
 *.DS_Store
 *.vscode
