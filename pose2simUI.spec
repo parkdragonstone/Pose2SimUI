@@ -6,10 +6,16 @@ Build:
   Windows: build.bat
 """
 import sys
+import os, glob
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_submodules, collect_dynamic_libs, collect_data_files
 
 ROOT = Path(SPECPATH)
+
+if sys.platform == "darwin":
+    icon_path = str(ROOT / "images" / "icon.icns")
+else:
+    icon_path = str(ROOT / "images" / "icon.ico")
 
 # ── Hidden imports ────────────────────────────────────────────────────────────
 # PyQt5 plugins are found automatically by PyInstaller >= 6.0 on most platforms,
@@ -40,31 +46,49 @@ hidden_imports = [
 # NumPy 2.x restructured internals into numpy._core (private package).
 # PyInstaller's hook misses it; collect_submodules ensures everything is bundled.
 hidden_imports += collect_submodules("numpy")
-
+hidden_imports += collect_submodules("onnxruntime")
 # ── Data files ────────────────────────────────────────────────────────────────
 datas = []
 
-# matplotlib data (fonts, style sheets, etc.)
 datas += collect_data_files("matplotlib")
-
-# mpl_toolkits
 datas += collect_data_files("mpl_toolkits")
-
-# Pose2Sim 데이터 파일 (LSTM 모델, OpenSim 설정 등 321개 파일)
 datas += collect_data_files("Pose2Sim")
+datas += collect_data_files("openvino")
+datas += collect_data_files("onnxruntime")
+
+binaries = []
+
+binaries += collect_dynamic_libs("onnxruntime")
+
+# ── MKL DLL 강제 번들 ─────────────────────────────────────────────────────────
+mkl_bin = os.path.join(
+    os.environ.get("CONDA_PREFIX", ""),
+    "Library", "bin"
+)
+
+mkl_dlls = glob.glob(os.path.join(mkl_bin, "mkl_*.dll"))
+mkl_dlls += glob.glob(os.path.join(mkl_bin, "libiomp5md.dll"))
+
+for dll in mkl_dlls:
+    binaries.append((dll, "."))
+
+binaries += collect_dynamic_libs("openvino")
 
 # ── Analysis ──────────────────────────────────────────────────────────────────
 a = Analysis(
     [str(ROOT / "main.py")],
     pathex=[str(ROOT)],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hidden_imports,
     hookspath=[str(ROOT / "hooks")],
     hooksconfig={
         "matplotlib": {"backends": ["Qt5Agg", "Agg"]},
     },
-    runtime_hooks=[str(ROOT / "hooks" / "pyi_rth_cv2_fix.py")],
+    runtime_hooks=[
+        str(ROOT / "hooks" / "pyi_rth_cv2_fix.py"),
+        # str(ROOT / "hooks" / "pyi_rth_onnxruntime.py"),            
+    ],
     excludes=[
         # test / dev dependencies
         "pytest", "pytest_qt", "sphinx",
@@ -90,14 +114,14 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,        # no terminal window
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,     # None = native arch; set "universal2" for fat binary
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(ROOT / "images" / "icon.icns"),
+    icon=icon_path,
 )
 
 coll = COLLECT(
@@ -106,8 +130,15 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
-    upx_exclude=[],
+    upx=False,
+    upx_exclude=[
+        "onnxruntime.dll",
+        "onnxruntime_providers_shared.dll",
+        "onnxruntime_pybind11_state.pyd",
+        "vcruntime140.dll",
+        "vcruntime140_1.dll",
+        "msvcp140.dll"
+    ],
     name="Pose2SimUI",
 )
 
@@ -116,7 +147,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Pose2SimUI.app",
-        icon=str(ROOT / "images" / "icon.icns"),
+        icon=icon_path,
         bundle_identifier="com.pose2simui.app",
         info_plist={
             "CFBundleShortVersionString": "1.0.0",

@@ -5,7 +5,20 @@ Pose2SimUI — Main entry point
 import os
 import sys
 from pathlib import Path
+import shutil
 
+# cv2의 qt 폴더 경로를 찾아서 자동 제거
+try:
+    import cv2
+    cv2_qt_path = os.path.join(os.path.dirname(cv2.__file__), "qt")
+    if os.path.exists(cv2_qt_path):
+        shutil.rmtree(cv2_qt_path)
+        print(f"제거 완료: {cv2_qt_path}")
+        # cv2를 다시 로드해야 하므로 프로세스 재시작
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+except Exception as e:
+    print(f"cv2 qt 폴더 처리 중 오류: {e}")
+    
 # pyqtgraph가 PyQt5를 사용하도록 고정 (UI와 Pose2Sim 모두 PyQt5 사용).
 os.environ.setdefault("PYQTGRAPH_QT_LIB", "PyQt5")
 os.environ.setdefault("QT_API", "pyqt5")           # matplotlib backend_qtagg가 PyQt5를 선택하도록

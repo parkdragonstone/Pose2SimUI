@@ -9,11 +9,9 @@
 
 | 항목 | 요구사항 |
 |---|---|
-| OS | macOS (권장), Linux |
+| OS | macOS (권장), Linux, Windows 10/11 |
 | Python | 3.12 |
 | 패키지 관리자 | [Miniconda](https://docs.conda.io/en/latest/miniconda.html) 또는 Anaconda |
-
-- Windows 10/11 Test X
 
 ---
 
@@ -37,15 +35,7 @@ conda activate pose2simUI
 
 ---
 
-### 3. 의존성 설치
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### 4. OpenSim 설치 (Kinematics 단계 필수)
+### 3. OpenSim 설치 (Kinematics 단계 필수)
 
 OpenSim은 pip으로 설치할 수 없으며 반드시 conda 채널을 사용해야 합니다.
 
@@ -56,6 +46,14 @@ conda install -c opensim-org opensim -y
 > **macOS Apple Silicon 주의사항**  
 > OpenSim 4.5 이상부터 Apple Silicon을 공식 지원합니다.  
 > OpenSim 없이도 앱은 실행되지만, Kinematics 단계 실행 시 오류가 발생합니다.
+
+---
+
+### 4. 의존성 설치
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
@@ -70,13 +68,13 @@ conda install -c opensim-org opensim -y
 또는
 
 ```bash
-conda run -n pose2simUI python main.py
+python main.py
 ```
 
 ### Windows
 
 ```bat
-conda run -n pose2simUI python main.py
+python main.py
 ```
 
 > **macOS 주의사항**  
@@ -174,7 +172,8 @@ open dist/Pose2SimUI.app
 
 ### Windows
 
-```bat
+- 추후 업데이트
+<!-- ```bat
 REM 일반 빌드
 build.bat
 
@@ -186,7 +185,7 @@ build.bat --clean
 
 ```
 dist\Pose2SimUI\Pose2SimUI.exe
-```
+``` -->
 
 > **빌드 주의사항**  
 > - 빌드 시 `__pycache__` 가 자동으로 정리됩니다.  

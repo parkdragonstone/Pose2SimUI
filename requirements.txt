@@ -1,7 +1,7 @@
 pose2sim
 numpy<2.0.0
 matplotlib>=3.9.0
-opencv-python>=4.10.0
+opencv-python>=4.11.0
 pyqtgraph>=0.13.7
 tomli-w>=1.0.0
 onnxruntime

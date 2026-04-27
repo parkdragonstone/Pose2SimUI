@@ -10,7 +10,7 @@ set CONDA_ENV=pose2simUI
 conda env list | findstr /C:"%CONDA_ENV%" >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] conda 환경 '%CONDA_ENV%'을 찾을 수 없습니다.
-    echo   conda env create -n %CONDA_ENV% python=3.11
+    echo   conda env create -n %CONDA_ENV% python=3.12
     echo   pip install -r requirements.txt pyinstaller
     exit /b 1
 )
