@@ -9,9 +9,11 @@
 
 | 항목 | 요구사항 |
 |---|---|
-| OS | macOS (Apple Silicon 권장), Windows 10/11 |
+| OS | macOS (권장), Linux |
 | Python | 3.12 |
 | 패키지 관리자 | [Miniconda](https://docs.conda.io/en/latest/miniconda.html) 또는 Anaconda |
+
+- Windows 10/11 Test X
 
 ---
 
@@ -147,10 +149,6 @@ conda run -n pose2simUI python -c "import opensim; print(opensim.__version__)"
 빌드 전에 conda 환경과 의존성이 모두 설치되어 있어야 합니다.
 
 ### 사전 준비
-
-```bash
-pip install pyinstaller==6.19.0
-```
 
 ### macOS
 
