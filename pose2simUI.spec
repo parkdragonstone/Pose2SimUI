@@ -53,14 +53,14 @@ datas = []
 datas += collect_data_files("matplotlib")
 datas += collect_data_files("mpl_toolkits")
 datas += collect_data_files("Pose2Sim")
-datas += collect_data_files("openvino")
 datas += collect_data_files("onnxruntime")
+# openvino 제외: onnxruntime 백엔드 사용, openvino 불필요하며 libhwloc.dylib 처리 오류 발생
 
 binaries = []
 
 binaries += collect_dynamic_libs("onnxruntime")
 
-# ── MKL DLL 강제 번들 ─────────────────────────────────────────────────────────
+# ── MKL DLL 강제 번들 (Windows 전용) ──────────────────────────────────────────
 mkl_bin = os.path.join(
     os.environ.get("CONDA_PREFIX", ""),
     "Library", "bin"
@@ -72,7 +72,7 @@ mkl_dlls += glob.glob(os.path.join(mkl_bin, "libiomp5md.dll"))
 for dll in mkl_dlls:
     binaries.append((dll, "."))
 
-binaries += collect_dynamic_libs("openvino")
+# openvino dylib 제외 (libhwloc.dylib arm64 처리 오류)
 
 # ── Analysis ──────────────────────────────────────────────────────────────────
 a = Analysis(
@@ -86,8 +86,7 @@ a = Analysis(
         "matplotlib": {"backends": ["Qt5Agg", "Agg"]},
     },
     runtime_hooks=[
-        str(ROOT / "hooks" / "pyi_rth_cv2_fix.py"),
-        # str(ROOT / "hooks" / "pyi_rth_onnxruntime.py"),            
+        str(ROOT / "hooks" / "pyi_rth_cv2_fix.py"),      
     ],
     excludes=[
         # test / dev dependencies

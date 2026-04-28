@@ -33,8 +33,8 @@ class PipelinePanel(QWidget):
         cancel_requested():             취소 요청
     """
 
-    step_run_requested = pyqtSignal(str, object)  # step_name, Path
-    run_all_requested  = pyqtSignal(object)       # Path
+    step_run_requested = pyqtSignal(str, object)   # step_name, Path
+    run_all_requested  = pyqtSignal(object, object) # Path, list[str] enabled steps
     cancel_requested   = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -152,9 +152,13 @@ class PipelinePanel(QWidget):
         for calib_path in project.list_calib_files():
             self._calib_combo.addItem(calib_path.name, userData=calib_path)
 
-        # Config.toml 로드
-        config_path = project.get_active_config_path()
-        self._config_panel.load_config(config_path)
+        # Config.toml 로드:
+        # - 표시(읽기): trial Config.toml이 있으면 그것, 없으면 project root 기본값
+        # - 저장 대상: 항상 trial Config.toml (없으면 새로 생성)
+        trial_cfg = trial.config_path()
+        project_cfg = project.get_config_path()
+        display_path = trial_cfg if trial_cfg.exists() else project_cfg
+        self._config_panel.load_config(display_path, save_path=trial_cfg)
 
     def connect_runner(self, runner: PipelineRunner):
         """PipelineRunner Signal을 이 패널에 연결."""
@@ -172,9 +176,15 @@ class PipelinePanel(QWidget):
 
     def _on_run_all(self):
         if self._trial:
+            enabled_steps = [
+                step for step, card in self._step_cards.items()
+                if card.is_enabled()
+            ]
+            if not enabled_steps:
+                return
             self._run_all_btn.setEnabled(False)
             self._stop_btn.setEnabled(True)
-            self.run_all_requested.emit(self._trial.path)
+            self.run_all_requested.emit(self._trial.path, enabled_steps)
 
     def _on_step_started(self, step_name: str):
         if step_name in self._step_cards:
@@ -193,6 +203,10 @@ class PipelinePanel(QWidget):
     def _on_pipeline_done(self, success: bool):
         self._run_all_btn.setEnabled(True)
         self._stop_btn.setEnabled(False)
+
+    def flush_config(self) -> None:
+        """ConfigPanel의 현재 위젯 값을 즉시 디스크에 저장."""
+        self._config_panel.save_config()
 
     def selected_calib_path(self) -> Path | None:
         """현재 드롭다운에서 선택된 Calib.toml 경로."""

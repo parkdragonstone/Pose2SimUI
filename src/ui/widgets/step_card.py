@@ -6,10 +6,9 @@
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QPushButton, QProgressBar,
-    QSizePolicy,
+    QCheckBox, QSizePolicy,
 )
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QColor
 
 
 class StepStatus:
@@ -59,7 +58,15 @@ class StepCard(QWidget):
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(8, 4, 8, 4)
-        outer.setSpacing(8)
+        outer.setSpacing(6)
+
+        # Run All 포함 여부 체크박스
+        self._enable_cb = QCheckBox()
+        self._enable_cb.setChecked(True)
+        self._enable_cb.setFixedWidth(18)
+        self._enable_cb.setToolTip("Run All에 포함")
+        self._enable_cb.toggled.connect(self._on_toggled)
+        outer.addWidget(self._enable_cb)
 
         # 상태 아이콘
         self._icon_label = QLabel(_STATUS_ICON[self._status])
@@ -91,7 +98,11 @@ class StepCard(QWidget):
 
         self._update_appearance()
 
-    # ── 상태 업데이트 API ──────────────────────────────────────────────
+    # ── 공개 API ──────────────────────────────────────────────────────
+
+    def is_enabled(self) -> bool:
+        """Run All에 포함 여부."""
+        return self._enable_cb.isChecked()
 
     def set_status(self, status: str):
         self._status = status
@@ -100,21 +111,31 @@ class StepCard(QWidget):
     def set_progress(self, percent: int):
         self._progress_bar.setValue(percent)
 
+    def _on_toggled(self, checked: bool):
+        self._update_appearance()
+
     def _update_appearance(self):
+        enabled = self._enable_cb.isChecked()
         icon = _STATUS_ICON.get(self._status, "⬜")
-        color = _STATUS_COLOR.get(self._status, "#555555")
+
+        if not enabled:
+            color = "#BBBBBB"
+        else:
+            color = _STATUS_COLOR.get(self._status, "#555555")
 
         self._icon_label.setText(icon)
+        self._icon_label.setStyleSheet(f"color: {'#BBBBBB' if not enabled else 'inherit'};")
         self._name_label.setStyleSheet(
             f"font-weight: bold; font-size: 12px; color: {color};"
         )
 
         is_running = self._status == StepStatus.RUNNING
         self._progress_bar.setVisible(is_running)
-        self._run_btn.setEnabled(self._status not in (StepStatus.RUNNING,))
+        self._run_btn.setEnabled(enabled and self._status not in (StepStatus.RUNNING,))
 
-        # 카드 배경 (실행 중일 때 연한 파란색)
-        if is_running:
+        if not enabled:
+            self.setStyleSheet("QWidget { background-color: #F8F8F8; border-radius: 4px; }")
+        elif is_running:
             self.setStyleSheet("QWidget { background-color: #e8f0fe; border-radius: 4px; }")
         elif self._status == StepStatus.FAILED:
             self.setStyleSheet("QWidget { background-color: #fce8e6; border-radius: 4px; }")

@@ -495,22 +495,24 @@ class MainWindow(QMainWindow):
         """
         if self._current_project is None:
             return
+        self._pipeline_panel.flush_config()
         calib_path = self._pipeline_panel.selected_calib_path()
         self._ensure_trial_config(trial_path, calib_path)
         self._begin_pipeline_log(trial_path, step_name)
         self._runner.run_step(step_name, trial_path)
 
-    def _on_run_all_requested(self, trial_path: Path):
+    def _on_run_all_requested(self, trial_path: Path, enabled_steps: list):
         """
         PipelinePanel 전체 실행 버튼 처리.
-        Config.toml이 없으면 자동 생성 후 runner에 위임.
+        체크박스로 선택된 스텝만 실행한다.
         """
         if self._current_project is None:
             return
+        self._pipeline_panel.flush_config()
         calib_path = self._pipeline_panel.selected_calib_path()
         self._ensure_trial_config(trial_path, calib_path)
         self._begin_pipeline_log(trial_path, "run_all")
-        self._runner.run_all(trial_path)
+        self._runner.run_all(trial_path, steps=enabled_steps)
 
     def _begin_pipeline_log(self, working_dir: Path, label: str) -> None:
         """project_root/project.log 에 모든 세션 로그를 누적 기록.
@@ -539,21 +541,27 @@ class MainWindow(QMainWindow):
 
     def _ensure_trial_config(self, trial_path: Path, calib_path: Path | None) -> None:
         """
-        Trial 폴더에 Config.toml이 없으면 자동 생성.
-        project_dir를 프로젝트 루트로 설정해 Pose2Sim이 calibration/ 폴더를 찾을 수 있게 함.
-        선택된 Calib.toml이 있으면 calibration.calibration_type = "load"로 설정.
-        # Design Ref: §5.3 — ConfigManager
+        실행 전 trial Config.toml의 project_dir / calib 경로를 조용히 갱신.
+        - trial Config.toml이 없으면 아무것도 하지 않음 (자동 생성 금지).
+          사용자가 Config 탭에서 저장해야 trial Config.toml이 생성됨.
+        - 존재하는 경우에만 project_dir·calib 경로를 업데이트하고 저장.
         """
         from src.core.config_manager import ConfigManager
         config_path = trial_path / "Config.toml"
+        if not config_path.exists():
+            return  # 자동 생성 하지 않음
+
         cm = ConfigManager()
         config = cm.load_or_default(config_path)
 
-        # project_dir: Pose2Sim이 calibration/ 폴더를 찾는 기준 경로
-        project_root = self._current_project.root_path
-        config["project"]["project_dir"] = str(project_root)
+        config.setdefault("project", {})["project_dir"] = str(trial_path)
 
-        # 선택된 Calib.toml을 calibration.load.file로 등록
+        # synchronization 호환 키
+        sync = config.get("synchronization", {})
+        if "likelihood_threshold_synchronization" in sync:
+            sync["likelihood_threshold"] = sync["likelihood_threshold_synchronization"]
+
+        # 선택된 Calib.toml 반영
         if calib_path and calib_path.exists():
             calib_str = str(calib_path)
             config.setdefault("calibration", {})
@@ -564,9 +572,6 @@ class MainWindow(QMainWindow):
             config["calibration"]["load"]["file"]["extrinsics_file"] = calib_str
 
         cm.save(config, config_path)
-        self._log_panel.append_log(
-            f"[INFO] Config.toml {'갱신' if config_path.exists() else '생성'}: {config_path}"
-        )
 
     def _on_calib_selected(self, calib_path: Path):
         """

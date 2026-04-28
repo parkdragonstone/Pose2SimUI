@@ -22,36 +22,58 @@ from src.ui.widgets.param_widget import make_param_widget
 # Config 섹션 → 탭 표시 순서
 # Design Ref: §7.2
 _TAB_ORDER = [
-    ("project",          "Project"),
-    ("pose",             "Pose"),
-    ("synchronization",  "Sync"),
-    ("triangulation",    "Triangulation"),
-    ("filtering",        "Filtering"),
-    ("markerAugmentation", "Augmentation"),
-    ("kinematics",       "Kinematics"),
+    ("project",           "Project"),
+    ("pose",              "Pose"),
+    ("synchronization",   "Sync"),
+    ("personAssociation", "Association"),
+    ("triangulation",     "Triangulation"),
+    ("filtering",         "Filtering"),
+    ("markerAugmentation","Augmentation"),
+    ("kinematics",        "Kinematics"),
 ]
-
-# 중첩 dict 섹션 (Filtering 하위 필터별 파라미터 등)은 펼쳐서 표시할 키
-_EXPAND_SUBSECTIONS = {"butterworth", "gaussian", "LOESS", "median"}
 
 # UI에서 숨길 파라미터 (값은 config에 유지, 저장 시 보존됨)
 _HIDDEN_KEYS: dict[str, set] = {
-    "project": {"frame_rate", "exclude_from_batch"},
-    "pose": {"vid_img_extension", "device", "backend", "parallel_workers_pose", "save_video", "output_format", "tracking_mode",
-             "display_detection"},
-    "synchronization": {"approx_time_maxspeed", "keypoints_to_consider"},
-    "filtering": {
-        "type", "display_figures","save_filt_plots",
-        "kalman", "one_euro", "gcv_spline", "gaussian",
-        "loess", "median", "butterworth_on_speed",
+    "project": {
+        "frame_rate",
+        "exclude_from_batch",
     },
-    "kinematics": {"parallel_workers_kinematics"}
+    "pose": {
+        "pose_model",
+        "device",
+        "backend",
+        "parallel_workers_pose",
+        "display_detection",
+        "save_video",
+        "output_format",
+        "tracking_mode",
+        "handle_LR_swap",
+        "undistort_points",
+    },
+    "synchronization": {
+        "approx_time_maxspeed",
+    },
+    "filtering": {
+        "type",
+        "display_figures",
+        "kalman",
+        "one_euro",
+        "gcv_spline",
+        "gaussian",
+        "loess",
+        "median",
+        "butterworth_on_speed",
+    },
+    "kinematics": {
+        "default_height",
+        "parallel_workers_kinematics",
+    },
+    "logging": {
+        "use_custom_logging",
+    },
 }
 
-# config에서 완전히 제거할 파라미터 (저장 시에도 포함되지 않음)
-_DELETE_KEYS: dict[str, set] = {
-    "markerAugmentation": {"participant_height", "participant_mass"},
-}
+_DELETE_KEYS: dict[str, set] = {}
 
 
 class _SectionTab(QScrollArea):
@@ -275,17 +297,14 @@ class ConfigPanel(QWidget):
 
         layout.addLayout(body, 1)
 
-    def load_config(self, config_path: Path):
+    def load_config(self, config_path: Path, save_path: Path | None = None):
         """
         지정된 Config.toml을 로드하고 탭을 재구성.
+        save_path: 저장 대상 경로 (미지정 시 config_path와 동일).
         # Plan SC: SC-07 — 프로젝트 전환 시 설정 독립 유지
         """
-        self._config_path = config_path
+        self._config_path = save_path or config_path  # 저장 경로
         self._config = self._manager.load_or_default(config_path)
-        for section, keys in _DELETE_KEYS.items():
-            if section in self._config:
-                for k in keys:
-                    self._config[section].pop(k, None)
         self._path_label.setText(f"설정: {config_path.name}")
         self._rebuild_sections()
 
@@ -356,16 +375,12 @@ class ConfigPanel(QWidget):
     def _reset_to_default(self):
         """기본값으로 초기화 후 탭 재빌드."""
         self._config = self._manager.get_default_config()
-        for section, keys in _DELETE_KEYS.items():
-            if section in self._config:
-                for k in keys:
-                    self._config[section].pop(k, None)
-        if self._config_path:
-            self._config["project"]["project_dir"] = str(
-                self._config_path.parent
-            )
         self._rebuild_sections()
         self.config_changed.emit(self._config)
+
+    def save_config(self) -> None:
+        """현재 위젯 값을 config에 반영하고 파일에 저장 (외부 호출용)."""
+        self._save_config()
 
     def get_config(self) -> dict:
         return self._config

@@ -282,48 +282,8 @@ class PipelineRunner(QObject):
             self.log_line.emit(f"[WARN] Config.toml 확장자 업데이트 실패: {e}")
 
     def _migrate_config_keys(self, working_dir: Path) -> None:
-        """
-        이전 버전 Config.toml의 잘못된 키 이름을 Pose2Sim 0.10+ 기준으로 자동 수정.
-        - likelihood_threshold_synchronization → likelihood_threshold
-        """
-        _RENAMES = {
-            "synchronization": {
-                "likelihood_threshold_synchronization": "likelihood_threshold",
-            },
-        }
-        _DEFAULTS = {
-            "triangulation": {
-                "reproj_error_threshold_triangulation": (15, 50),   # old → new
-                "max_distance_m": (1.0, 10.0),
-                "min_chunk_size": (10, 4),
-            },
-        }
-        config_path = working_dir / "Config.toml"
-        if not config_path.exists():
-            return
-        try:
-            import tomllib, tomli_w
-            with open(config_path, "rb") as f:
-                cfg = tomllib.load(f)
-            changed = False
-            for section, renames in _RENAMES.items():
-                sec = cfg.get(section, {})
-                for old_key, new_key in renames.items():
-                    if old_key in sec:
-                        sec[new_key] = sec.pop(old_key)
-                        changed = True
-            for section, updates in _DEFAULTS.items():
-                sec = cfg.get(section, {})
-                for key, (old_val, new_val) in updates.items():
-                    if sec.get(key) == old_val:
-                        sec[key] = new_val
-                        changed = True
-            if changed:
-                with open(config_path, "wb") as f:
-                    tomli_w.dump(cfg, f)
-                self.log_line.emit("[INFO] Config.toml 자동 마이그레이션 완료")
-        except Exception as e:
-            self.log_line.emit(f"[WARN] Config.toml 마이그레이션 실패: {e}")
+        """이전 버전 Config.toml 키 마이그레이션 (현재는 처리할 rename 없음)."""
+        pass
 
     def _build_calib_config(self, step: str, params: dict, project_root: Path) -> dict:
         """

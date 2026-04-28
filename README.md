@@ -302,6 +302,8 @@ Calibration 탭에서 **+ New** 버튼 클릭
 #### 파이프라인 실행
 
 오른쪽 사이드바 **Pipeline** 탭에서 **Run All** 버튼 클릭
+- synchronization 진행 X
+- triangulation 에서 오류 발생시 reporj error threshold triangulation = 50, max distance m = 10 으로 수정
 
 ![](images/RUN.png)
 

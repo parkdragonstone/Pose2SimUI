@@ -26,44 +26,42 @@ POSE2SIM_DIR_STRUCTURE = [
     "Trial_01/videos",
 ]
 
-# Config.toml 기본 템플릿 (Pose2Sim 기본값 기반)
-# 참조: /Users/yongseok/Downloads/Config.toml (Pose2Sim 공식 기본 Config)
+# Config.toml 기본 템플릿
+# 참조: https://github.com/perfanalytics/pose2sim/blob/main/Pose2Sim/Demo_SinglePerson/Config.toml
 DEFAULT_CONFIG: dict = {
     "project": {
-        "project_dir": ".",
-        "frame_rate": "auto",
-        "frame_range": "auto",
         "multi_person": False,
-        "nb_persons_to_detect": 1,
         "participant_height": "auto",
         "participant_mass": 70.0,
-        "exclude_from_batch": [],
+        "frame_rate": "auto",         # hidden (fixed)
+        "frame_range": "auto",
+        "exclude_from_batch": [],     # hidden (fixed)
     },
     "pose": {
-        "vid_img_extension": "mp4",
-        "pose_model": "Body_with_feet",
+        "pose_model": "Body_with_feet",       # hidden (fixed)
         "mode": "balanced",
         "det_frequency": 4,
-        "device": "auto",
-        "backend": "auto",
-        "parallel_workers_pose": "auto",
-        "display_detection": False,
+        "device": "auto",                     # hidden (fixed)
+        "backend": "auto",                    # hidden (fixed)
+        "parallel_workers_pose": "auto",      # hidden (fixed)
+        "display_detection": True,            # hidden (fixed)
         "overwrite_pose": False,
-        "save_video": "to_video",
-        "output_format": "openpose",
-        "tracking_mode": "sports2d",
+        "save_video": "to_video",             # hidden (fixed)
+        "output_format": "openpose",          # hidden (fixed)
+        "average_likelihood_threshold_pose": 0.5,
+        "tracking_mode": "sports2d",          # hidden (fixed)
         "max_distance_px": 100,
-        "handle_LR_swap": False,
-        "undistort_points": False,
+        "handle_LR_swap": False,              # hidden (fixed)
+        "undistort_points": False,            # hidden (fixed)
     },
     "synchronization": {
         "synchronization_gui": False,
         "display_sync_plots": False,
         "save_sync_plots": False,
         "keypoints_to_consider": "all",
-        "approx_time_maxspeed": "auto",
+        "approx_time_maxspeed": "auto",       # hidden (fixed)
         "time_range_around_maxspeed": 2.0,
-        "likelihood_threshold": 0.4,
+        "likelihood_threshold_synchronization": 0.4,
         "filter_cutoff": 6,
         "filter_order": 4,
     },
@@ -106,13 +104,12 @@ DEFAULT_CONFIG: dict = {
     "filtering": {
         "reject_outliers": True,
         "filter": True,
-        "filter_ik": False,
-        "type": "butterworth",
-        "display_figures": False,
-        "overwrite_filterd": True,
+        "type": "butterworth",                # hidden (fixed)
+        "display_figures": False,             # hidden (fixed)
         "save_filt_plots": False,
         "make_c3d": False,
         "butterworth": {"order": 4, "cut_off_frequency": 6},
+        # 아래 서브섹션은 UI에 표시하지 않지만 pose2sim recap_filter3d가 모든 타입을 읽으므로 필수
         "kalman": {"trust_ratio": 500, "smooth": True},
         "one_euro": {"cut_off_frequency": 4.0, "beta": 1.5, "d_cut_off_frequency": 1.0},
         "gcv_spline": {"cut_off_frequency": "auto", "smoothing_factor": 1.0},
@@ -128,17 +125,16 @@ DEFAULT_CONFIG: dict = {
     "kinematics": {
         "use_augmentation": True,
         "use_simple_model": True,
-        "parallel_workers_kinematics": "auto",
+        "filter_ik": True,
         "right_left_symmetry": True,
-        "default_height": 1.7,
+        "default_height": 1.7,                    # hidden (fixed)
+        "parallel_workers_kinematics": "auto",    # hidden (fixed)
         "remove_individual_scaling_setup": True,
         "remove_individual_ik_setup": True,
-        "fastest_frames_to_remove_percent": 0.1,
-        "slowest_frames_to_remove_percent": 0.1,
         "large_hip_knee_angles": 135,
         "trimmed_extrema_percent": 0.5,
     },
     "logging": {
-        "use_custom_logging": False,
+        "use_custom_logging": False,              # hidden (fixed)
     },
 }
